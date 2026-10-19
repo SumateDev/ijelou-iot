@@ -1,0 +1,970 @@
+openapi: 3.0.3
+info:
+  title: TTLock API
+  description: |
+    API para la integración con cerraduras inteligentes TTLock.
+    Esta API permite gestionar tokens de acceso y códigos de acceso (passcodes) para cerraduras.
+  version: 3.0.0
+  contact:
+    name: TTLock Support
+    url: https://www.ttlock.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://euapi.ttlock.com
+    description: Servidor de producción Europa
+
+paths:
+  /oauth2/token:
+    post:
+      summary: Generar o refrescar token de acceso
+      description: |
+        Obtiene un nuevo token de acceso usando credenciales de usuario o refresca un token existente usando refresh_token.
+        Soporta dos tipos de grant_type: 'password' para autenticación inicial y 'refresh_token' para renovar tokens.
+      operationId: generateOrRefreshToken
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/PasswordGrantRequest'
+                - $ref: '#/components/schemas/RefreshTokenGrantRequest'
+            examples:
+              password_grant:
+                summary: Autenticación con credenciales
+                value:
+                  clientId: "your_client_id"
+                  clientSecret: "your_client_secret"
+                  username: "user@example.com"
+                  password: "5d41402abc4b2a76b9719d911017c592"
+              refresh_token_grant:
+                summary: Renovación de token
+                value:
+                  access_token: "your_access_token"
+                  refresh_token: "existing_refresh_token"
+                  expires_in: 7776000
+      responses:
+        '200':
+          description: Token generado o refrescado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              examples:
+                success:
+                  summary: Respuesta exitosa
+                  value:
+                    access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    uid: 123456
+                    refresh_token: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
+                    expires_in: 7776000
+
+  /v3/keyboardPwd/add:
+    post:
+      summary: Agregar código de acceso personalizado
+      description: |
+        Añade un nuevo código de acceso (passcode) a una cerradura específica.
+        El código puede ser temporal con fechas de inicio y fin, o permanente.
+        Requiere token de acceso válido.
+      operationId: addCustomPasscode
+      tags:
+        - Passcodes
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AddPasscodeRequest'
+            examples:
+              temporary_code:
+                summary: Código temporal
+                value:
+                  clientId: "your_client_id"
+                  accessToken: "your_access_token"
+                  lockId: 123456
+                  keyboardPwd: "123456"
+                  keyboardPwdName: "Código Temporal Usuario"
+                  keyboardPwdType: 3
+                  startDate: 1672531200000
+                  endDate: 1672617600000
+                  addType: 1
+                  date: 1672531200000
+              permanent_code:
+                summary: Código permanente
+                value:
+                  clientId: "your_client_id"
+                  accessToken: "your_access_token"
+                  lockId: 123456
+                  keyboardPwd: "987654"
+                  keyboardPwdName: "Código Permanente"
+                  keyboardPwdType: 1
+                  addType: 2
+                  date: 1672531200000
+      responses:
+        '200':
+          description: Código de acceso agregado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddPasscodeResponse'
+              examples:
+                success:
+                  summary: Código agregado exitosamente
+                  value:
+                    keyboardPwdId: 789012
+
+  /v3/lock/detail:
+    get:
+      summary: Obtener detalles de una cerradura
+      description: |
+        Obtiene los detalles de una cerradura específica.
+        Requiere token de acceso válido.
+      operationId: getLockDetails
+      tags:
+        - Cerraduras
+      parameters:
+        - name: clientId
+          in: query
+          required: true
+          schema:
+            type: string
+            description: ID del cliente proporcionado por TTLock
+            example: "your_client_id"
+        - name: clientSecret
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Secreto del cliente proporcionado por TTLock
+            example: "your_client_secret"
+        - name: accessToken
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Token de acceso válido
+            example: "your_access_token"
+        - name: lockId
+          in: query
+          required: true
+          schema:
+            type: integer
+            description: ID único de la cerradura
+            example: 123456
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            description: Timestamp actual en milisegundos
+            example: 1672531200000
+      responses:
+        '200':
+          description: Lista de cerraduras obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/Lock'
+
+  /v3/lock/list:
+    get:
+      summary: Listar cerraduras
+      description: |
+        Obtiene una lista de todas las cerraduras asociadas al cliente.
+        Requiere token de acceso válido.
+      operationId: listLocks
+      tags:
+        - Cerraduras
+      parameters:
+        - name: clientId
+          in: query
+          required: true
+          schema:
+            type: string
+            description: ID del cliente proporcionado por TTLock
+            example: "your_client_id"
+        - name: clientSecret
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Secreto del cliente proporcionado por TTLock
+            example: "your_client_secret"
+        - name: accessToken
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Token de acceso válido
+            example: "your_access_token"
+        - name: pageNo
+          in: query
+          required: false
+          schema:
+            type: integer
+            description: Número de página para paginación (opcional)
+            example: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            description: Cantidad de cerraduras por página (opcional)
+            example: 10
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            description: Timestamp actual en milisegundos
+            example: 1672531200000
+      responses:
+        '200':
+          description: Lista de cerraduras obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  list:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Lock'
+                  pageNo:
+                    type: integer
+                    description: Número de página actual
+                    example: 1
+                  pageSize:
+                    type: integer
+                    description: Cantidad de cerraduras por página
+                    example: 10
+                  pages:
+                    type: integer
+                    description: Total de páginas disponibles
+                    example: 5
+                  total:
+                    type: integer
+                    description: Total de cerraduras disponibles
+                    example: 50
+
+  /v3/lock/lock:
+    post:
+      summary: Bloquear una cerradura
+      description: |
+        Bloquea una cerradura específica.
+        Requiere token de acceso válido.
+      operationId: lockLock
+      tags:
+        - Cerraduras
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                clientId:
+                  type: string
+                  description: ID del cliente proporcionado por TTLock
+                  example: "your_client_id"
+                accessToken:
+                  type: string
+                  description: Token de acceso válido
+                  example: "your_access_token"
+                lockId:
+                  type: integer
+                  description: ID único de la cerradura
+                  example: 123456
+                date:
+                  type: integer
+                  format: int64
+                  description: Timestamp actual en milisegundos
+                  example: 1672531200000
+            examples:
+              lock_request:
+                summary: Solicitud de bloqueo
+                value:
+                  clientId: "your_client_id"
+                  accessToken: "your_access_token"
+                  lockId: 123456
+                  date: 1672531200000
+
+      responses:
+        '200':
+          description: Cerradura bloqueada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errcode:
+                    type: integer
+                    description: Código de error (0 para éxito)
+                    example: 0
+                  errmsg:
+                    type: string
+                    description: Mensaje de error (vacío para éxito)
+                    example: ""
+
+  /v3/lock/unlock:
+    post:
+      summary: Desbloquear una cerradura
+      description: |
+        Desbloquea una cerradura específica.
+        Requiere token de acceso válido.
+      operationId: unlockLock
+      tags:
+        - Cerraduras
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                clientId:
+                  type: string
+                  description: ID del cliente proporcionado por TTLock
+                  example: "your_client_id"
+                accessToken:
+                  type: string
+                  description: Token de acceso válido
+                  example: "your_access_token"
+                lockId:
+                  type: integer
+                  description: ID único de la cerradura
+                  example: 123456
+                date:
+                  type: integer
+                  format: int64
+                  description: Timestamp actual en milisegundos
+                  example: 1672531200000
+            examples:
+              unlock_request:
+                summary: Solicitud de desbloqueo
+                value:
+                  clientId: "your_client_id"
+                  accessToken: "your_access_token"
+                  lockId: 123456
+                  date: 1672531200000
+      responses:
+        '200':
+          description: Cerradura desbloqueada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errcode:
+                    type: integer
+                    description: Código de error (0 para éxito)
+                    example: 0
+                  errmsg:
+                    type: string
+                    description: Mensaje de error (vacío para éxito)
+                    example: ""
+
+  /v3/lockRecord/list:
+    get:
+      summary: Listar registros de cerraduras
+      description: |
+        Obtiene una lista de registros de operaciones realizadas en las cerraduras.
+        Requiere token de acceso válido.
+      operationId: listLockRecords
+      tags:
+        - Cerraduras
+      parameters:
+        - name: clientId
+          in: query
+          required: true
+          schema:
+            type: string
+            description: ID del cliente proporcionado por TTLock
+            example: "your_client_id"
+        - name: accessToken
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Token de acceso válido
+            example: "your_access_token"
+        - name: lockId
+          in: query
+          required: true
+          schema:
+            type: integer
+            description: ID único de la cerradura
+            example: 123456
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            description: Timestamp de inicio en milisegundos
+            example: 1672531200000
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            description: Timestamp de fin en milisegundos
+            example: 1672617600000
+        - name: pageNo
+          in: query
+          required: true
+          schema:
+            type: integer
+            description: Número de página para paginación. Empezar desde 1.
+            example: 1
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+            description: Cantidad de registros por página. Máximo 200.
+            example: 10
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            description: Timestamp actual en milisegundos
+            example: 1672531200000
+      responses:
+        '200':
+          description: Lista de registros obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  list:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        recordId:
+                          type: integer
+                          description: ID único del registro de la cerradura
+                          example: 345678
+                        lockId:
+                          type: integer
+                          description: ID único de la cerradura
+                          example: 123456
+                        recordTypeFromLock:
+                          type: integer
+                          description: Tipo de registro desde la cerradura (ver documentación de TTLock para detalles)
+                          example: 2
+                        recordType:
+                          type: integer
+                          description: Tipo de registro (ver documentación de TTLock para detalles)
+                          example: 1
+                        recordTime:
+                          type: integer
+                          format: int64
+                          description: Timestamp del registro en milisegundos
+                          example: 1672531200000
+                        username:
+                          type: string
+                          description: Nombre del usuario que realizó la operación
+                          example: "abc_c042f4db68f23406c6cecf84a7ebb0fe"
+                        keyboardPwd:
+                          type: string
+                          description: Contraseña, numero de tarjeta o numero de huella
+                          example: "789012"
+                        lockDate:
+                          type: integer
+                          format: int64
+                          description: Timestamp de la cerradura en milisegundos
+                          example: 1672531200000
+                        serverDate:
+                          type: integer
+                          format: int64
+                          description: Timestamp del registro subido al servidor en milisegundos
+                          example: 1672531200000
+                  pageNo:
+                    type: integer
+                    description: Número de página actual
+                    example: 1
+                  pageSize:
+                    type: integer
+                    description: Cantidad de registros por página
+                    example: 10
+                  pages:
+                    type: integer
+                    description: Total de páginas disponibles
+                    example: 5
+                  total:
+                    type: integer
+                    description: Total de registros disponibles
+                    example: 50
+
+  /v3/user/delete:
+    post:
+      summary: Eliminar un usuario registrado via API
+      description: |
+        Elimina un usuario registrado en el sistema TTLock.
+      operationId: deleteUser
+      tags:
+        - Usuarios
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                clientId:
+                  type: string
+                  description: ID del cliente proporcionado por TTLock
+                  example: "your_client_id"
+                clientSecret:
+                  type: string
+                  description: Secreto del cliente proporcionado por TTLock
+                  example: "your_client_secret"
+                username:
+                  type: string
+                  description: Nombre del usuario prefijado, obtenido al registrar el usuario via API.
+                  example: "c042f4db68f23406c6cecf84a7ebb0fe"
+                date:
+                  type: integer
+                  format: int64
+                  description: Timestamp actual en milisegundos
+                  example: 1672531200000
+      responses:
+        '200':
+          description: Usuario eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errcode:
+                    type: integer
+                    description: Código de error (0 para éxito)
+                    example: 0
+                  errmsg:
+                    type: string
+                    description: Mensaje de error o éxito
+                    example: "none error message"
+
+  /v3/user/list:
+    get:
+      summary: Listar usuarios registrados
+      description: |
+        Obtiene una lista de usuarios registrados asociados al cliente.
+      operationId: listUsers
+      tags:
+        - Usuarios
+      parameters:
+        - name: clientId
+          in: query
+          required: true
+          schema:
+            type: string
+            description: ID del cliente proporcionado por TTLock
+            example: "your_client_id"
+        - name: clientSecret
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Secreto del cliente proporcionado por TTLock
+            example: "your_client_secret"
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+            description: Timestamp de inicio en milisegundos (opcional)
+            example: 1672531200000 
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+            description: Timestamp de fin en milisegundos (opcional)
+            example: 1672617600000
+        - name: pageNo
+          in: query
+          required: true
+          schema:
+            type: integer
+            description: Número de página para paginación. Empezar desde 1.
+            example: 1
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+            description: Cantidad de usuarios por página. Máximo 200.
+            example: 10
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            description: Timestamp actual en milisegundos
+            example: 1672531200000
+
+      responses:
+        '200':
+          description: Lista de usuarios obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  list:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        username:
+                          type: string
+                          description: Nombre del usuario prefijado, registrado via API
+                          example: "abc_c042f4db68f23406c6cecf84a7ebb0fe"
+                        regtime:
+                          type: integer
+                          format: int64
+                          description: Timestamp de registro en milisegundos
+                          example: 1672531200000
+                  pageNo:
+                    type: integer
+                    description: Número de página actual
+                    example: 1
+                  pageSize:
+                    type: integer
+                    description: Cantidad de usuarios por página
+                    example: 10
+                  pages:
+                    type: integer
+                    description: Total de páginas disponibles
+                    example: 5
+                  total:
+                    type: integer
+                    description: Total de usuarios disponibles
+                    example: 50
+
+  /v3/user/register:
+    post:
+      summary: Registrar un nuevo usuario
+      description: |
+        Registra un nuevo usuario en el sistema TTLock.
+      operationId: registerUser
+      tags:
+        - Usuarios
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                clientId:
+                  type: string
+                  description: ID del cliente proporcionado por TTLock
+                  example: "your_client_id"
+                clientSecret:
+                  type: string
+                  description: Secreto del cliente proporcionado por TTLock
+                  example: "your_client_secret"
+                username:
+                  type: string
+                  description: Nombre del usuario, solo numeros y letras en ingles estan permitidos. Esta api retorna un nombre de usuario prefijado.
+                  example: "c042f4db68f23406c6cecf84a7ebb0fe"
+                password:
+                  type: string
+                  description: Contraseña del usuario en formato MD5. No es la contraseña para abrir la cerradura.
+                  example: "5d41402abc4b2a76b9719d911017c592"
+                date:
+                  type: integer
+                  format: int64
+                  description: Timestamp actual en milisegundos
+                  example: 1672531200000
+      responses:
+        '200':
+          description: Nombre de usuario prefijado generado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                    description: Nombre de usuario prefijado
+                    example: "abcd_c042f4db68f23406c6cecf84a7ebb0fe"
+
+  /v3/user/resetPassword:
+    post:
+      summary: Resetear la contraseña de un usuario registrado via API
+      description: |
+        Permite a un usuario registrado resetear su contraseña.
+      operationId: resetUserPassword
+      tags:
+        - Usuarios
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                clientId:
+                  type: string
+                  description: ID del cliente proporcionado por TTLock
+                  example: "your_client_id"
+                clientSecret:
+                  type: string
+                  description: Secreto del cliente proporcionado por TTLock
+                  example: "your_client_secret"
+                username:
+                  type: string
+                  description: Nombre del usuario prefijado, obtenido al registrar el usuario via API.
+                  example: "c042f4db68f23406c6cecf84a7ebb0fe"
+                password:
+                  type: string
+                  description: Nueva contraseña del usuario en formato MD5. No es la contraseña para abrir la cerradura.
+                  example: "5d41402abc4b2a76b9719d911017c592"
+                date:
+                  type: integer
+                  format: int64
+                  description: Timestamp actual en milisegundos
+                  example: 1672531200000
+      responses:
+        '200':
+          description: Nombre de usuario prefijado generado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errcode:
+                    type: integer
+                    description: Código de error (0 para éxito)
+                    example: 0
+                  errmsg:
+                    type: string
+                    description: Mensaje de error o éxito
+                    example: "none error message"
+
+
+components:
+  schemas:
+    Lock:
+      type: object
+      properties:
+        lockId:
+          type: integer
+          description: ID único de la cerradura
+          example: 123456
+        lockName:
+          type: string
+          description: Nombre descriptivo de la cerradura
+          example: "Cerradura Principal"
+        lockAlias:
+          type: string
+          description: Alias de la cerradura
+          example: "Main Lock"
+        lockMac:
+          type: string
+          description: Dirección MAC de la cerradura
+          example: "00:1A:2B:3C:4D:5E"
+        electricQuantity:
+          type: integer
+          description: Nivel de batería de la cerradura (0-100)
+          example: 85
+        featureValue:
+          type: string
+          description: Valor de características de la cerradura, en cadena de texto hexadecimal en mayúscula (Ver documentación de TTLock para más detalles)
+          example: "C2F44354CF1F3"
+        groupId:
+          type: integer
+          description: ID del grupo al que pertenece la cerradura
+          example: 7890
+        pageNo:
+          type: integer
+          description: Número de página actual en la paginación
+          example: 1
+        pageSize:
+          type: integer
+          description: Cantidad de cerraduras por página
+          example: 10
+        date:
+          type: integer
+          format: int64
+          description: Timestamp actual en milisegundos
+          example: 1672531200000
+
+    PasswordGrantRequest:
+      type: object
+      required:
+        - clientId
+        - clientSecret
+        - username
+        - password
+      properties:
+        clientId:
+          type: string
+          description: ID del cliente proporcionado por TTLock
+          example: "your_client_id"
+        clientSecret:
+          type: string
+          description: Secreto del cliente proporcionado por TTLock
+          example: "your_client_secret"
+        username:
+          type: string
+          format: email
+          description: Email del usuario registrado en TTLock
+          example: "user@example.com"
+        password:
+          type: string
+          description: Contraseña del usuario en formato MD5
+          example: "5d41402abc4b2a76b9719d911017c592"
+
+    RefreshTokenGrantRequest:
+      type: object
+      required:
+        - clientId
+        - clientSecret
+        - grant_type
+        - refresh_token
+      properties:
+        clientId:
+          type: string
+          description: ID del cliente proporcionado por TTLock
+          example: "your_client_id"
+        clientSecret:
+          type: string
+          description: Secreto del cliente proporcionado por TTLock
+          example: "your_client_secret"
+        grant_type:
+          type: string
+          enum: [refresh_token]
+          description: Tipo de grant para renovación de token
+          example: "refresh_token"
+        refresh_token:
+          type: string
+          description: Token de renovación obtenido previamente
+          example: "existing_refresh_token"
+
+    TokenResponse:
+      type: object
+      properties:
+
+        access_token:
+          type: string
+          description: Token de acceso JWT
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        uid:
+          type: integer
+          description: ID del usuario asociado al token
+          example: 123456
+        refresh_token:
+          type: string
+          description: Token de renovación
+          example: "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
+        expires_in:
+          type: integer
+          description: Tiempo de expiración del token en segundos
+          example: 7776000
+
+    AddPasscodeRequest:
+      type: object
+      required:
+        - clientId
+        - accessToken
+        - lockId
+        - keyboardPwd
+        - keyboardPwdName
+        - date
+      properties:
+        clientId:
+          type: string
+          description: ID del cliente
+          example: "your_client_id"
+        accessToken:
+          type: string
+          description: Token de acceso válido
+          example: "your_access_token"
+        lockId:
+          type: integer
+          description: ID único de la cerradura
+          example: 123456
+        keyboardPwd:
+          type: string
+          description: Código de acceso (4-9 dígitos)
+          example: "123456"
+          pattern: "^[0-9]{4,9}$"
+        keyboardPwdName:
+          type: string
+          description: Nombre descriptivo del código
+          example: "Código Temporal Usuario"
+          maxLength: 100
+        keyboardPwdType:
+          type: integer
+          enum: [2, 3]
+          description: |
+            Tipo de código:
+            - 2: Código permanente
+            - 3: Código temporal (válido entre startDate y endDate)
+          example: 3
+          default: 3
+        startDate:
+          type: integer
+          format: int64
+          description: Fecha de inicio en milisegundos (timestamp). Requerido para keyboardPwdType=3
+          example: 1672531200000
+        endDate:
+          type: integer
+          format: int64
+          description: Fecha de fin en milisegundos (timestamp). Requerido para keyboardPwdType=3
+          example: 1672617600000
+        addType:
+          type: integer
+          enum: [1, 2]
+          description: |
+            Método de adición:
+            - 1: Adición vía bluetooth.
+            - 2: Adición vía gateway o WiFi Lock.
+          example: 1
+          default: 1
+        date:
+          type: integer
+          format: int64
+          description: Timestamp actual en milisegundos
+          example: 1672531200000
+
+    AddPasscodeResponse:
+      type: object
+      properties:
+        keyboardPwdId:
+          type: integer
+          description: ID único del código de acceso creado
+          example: 789012
+
+tags:
+  - name: Authentication
+    description: Endpoints para autenticación y gestión de tokens
+  - name: Cerraduras
+    description: Endpoints para gestión de cerraduras TTLock
+  - name: Passcodes
+    description: Endpoints para gestión de códigos de acceso
+
+externalDocs:
+  description: Documentación oficial de TTLock
+  url: https://euopen.ttlock.com/document/doc?urlName=userGuide%2FekeyEn.html

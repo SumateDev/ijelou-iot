@@ -1,0 +1,714 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Sonoffs de Cerraduras",
+    "description": "API para el control de cerraduras",
+    "contact": {
+      "name": "API Support"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://iotsapi.ijelou.com/api",
+      "description": "Servidor de producción"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Sistema",
+      "description": "Operaciones relacionadas con el estado del sistema"
+    },
+    {
+      "name": "Dispositivos",
+      "description": "Operaciones para consultar dispositivos"
+    },
+    {
+      "name": "Control",
+      "description": "Operaciones para controlar dispositivos"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Sistema"
+        ],
+        "summary": "Estado de conexión",
+        "description": "Indica el estado de la conexión al broker MQTT",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Estado de conexión exitoso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "example": {
+                  "status": "ok",
+                  "mqtt_connected": true,
+                  "mqtt_authenticated": true,
+                  "api_authentication_enabled": true,
+                  "uptime": 11216.380195251,
+                  "timestamp": "2025-08-07T21:04:34.923Z"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices": {
+      "get": {
+        "tags": [
+          "Dispositivos"
+        ],
+        "summary": "Lista de dispositivos",
+        "description": "Lista los dispositivos conectados al broker MQTT",
+        "operationId": "getDevices",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de dispositivos conectados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevicesResponse"
+                },
+                "example": {
+                  "devices": {
+                    "sv_sanisidro": {
+                      "LWT": {
+                        "payload": "Online",
+                        "timestamp": "2025-08-07T19:08:57.154Z"
+                      },
+                      "STATE": {
+                        "payload": {
+                          "Time": "2025-08-07T22:06:27",
+                          "Uptime": "0T03:20:13",
+                          "UptimeSec": 12013,
+                          "Heap": 25,
+                          "SleepMode": "Dynamic",
+                          "Sleep": 50,
+                          "LoadAvg": 19,
+                          "MqttCount": 2,
+                          "POWER": "OFF",
+                          "Wifi": {
+                            "AP": 1,
+                            "SSId": "CV_2302",
+                            "BSSId": "C4:3C:B0:98:C8:1E",
+                            "Channel": 1,
+                            "Mode": "11n",
+                            "RSSI": 94,
+                            "Signal": -53,
+                            "LinkCount": 1,
+                            "Downtime": "0T00:00:05"
+                          }
+                        },
+                        "timestamp": "2025-08-07T21:06:35.177Z"
+                      }
+                    }
+                  },
+                  "mqtt_connected": true,
+                  "device_count": 1
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado - Token no proporcionado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "No autorizado - Token requerido",
+                  "message": "Debe proporcionar un Bearer token en el header Authorization"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado - Token inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Acceso denegado - Token inválido",
+                  "message": "El token proporcionado no es válido"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/{deviceName}": {
+      "get": {
+        "tags": [
+          "Dispositivos"
+        ],
+        "summary": "Estado de un dispositivo",
+        "description": "Obtiene el estado de un dispositivo específico",
+        "operationId": "getDeviceStatus",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deviceName",
+            "in": "path",
+            "description": "Nombre del dispositivo",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "sv_sanisidro"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado del dispositivo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceStatusResponse"
+                },
+                "example": {
+                  "device": "sv_sanisidro",
+                  "data": {
+                    "LWT": {
+                      "payload": "Online",
+                      "timestamp": "2025-08-07T19:08:57.154Z"
+                    },
+                    "STATE": {
+                      "payload": {
+                        "Time": "2025-08-07T22:06:27",
+                        "Uptime": "0T03:20:13",
+                        "UptimeSec": 12013,
+                        "Heap": 25,
+                        "SleepMode": "Dynamic",
+                        "Sleep": 50,
+                        "LoadAvg": 19,
+                        "MqttCount": 2,
+                        "POWER": "OFF",
+                        "Wifi": {
+                          "AP": 1,
+                          "SSId": "CV_2302",
+                          "BSSId": "C4:3C:B0:98:C8:1E",
+                          "Channel": 1,
+                          "Mode": "11n",
+                          "RSSI": 94,
+                          "Signal": -53,
+                          "LinkCount": 1,
+                          "Downtime": "0T00:00:05"
+                        }
+                      },
+                      "timestamp": "2025-08-07T21:06:35.177Z"
+                    }
+                  },
+                  "mqtt_connected": true
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado - Token no proporcionado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado - Token inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dispositivo no encontrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Dispositivo no encontrado"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/devices/{deviceName}/power": {
+      "post": {
+        "tags": [
+          "Control"
+        ],
+        "summary": "Control de encendido y apagado",
+        "description": "Envía un comando de encendido o apagado al dispositivo",
+        "operationId": "controlDevicePower",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "deviceName",
+            "in": "path",
+            "description": "Nombre del dispositivo",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "sv_2demayo"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PowerControlRequest"
+              },
+              "example": {
+                "state": "ON"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Comando enviado exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PowerControlResponse"
+                },
+                "example": {
+                  "success": true,
+                  "device": "sv_2demayo",
+                  "command": "Power",
+                  "state": "ON",
+                  "timestamp": "2025-08-07T22:55:13.898Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Solicitud inválida",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Estado debe ser ON, OFF o TOGGLE"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado - Token no proporcionado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acceso denegado - Token inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno del servidor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Error controlando dispositivo"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servicio no disponible - MQTT desconectado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "MQTT broker no disponible",
+                  "mqtt_connected": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Token de autenticación Bearer. Debe configurarse en la variable de entorno API_BEARER_TOKEN"
+      }
+    },
+    "schemas": {
+      "HealthResponse": {
+        "required": [
+          "api_authentication_enabled",
+          "mqtt_authenticated",
+          "mqtt_connected",
+          "status",
+          "timestamp",
+          "uptime"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Estado general del sistema",
+            "example": "ok"
+          },
+          "mqtt_connected": {
+            "type": "boolean",
+            "description": "Estado de conexión MQTT"
+          },
+          "mqtt_authenticated": {
+            "type": "boolean",
+            "description": "Estado de autenticación MQTT"
+          },
+          "api_authentication_enabled": {
+            "type": "boolean",
+            "description": "Indica si la autenticación por Bearer Token está habilitada"
+          },
+          "uptime": {
+            "type": "number",
+            "description": "Tiempo de actividad en segundos"
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "Timestamp de la respuesta",
+            "format": "date-time"
+          }
+        }
+      },
+      "DevicesResponse": {
+        "required": [
+          "device_count",
+          "devices",
+          "mqtt_connected"
+        ],
+        "type": "object",
+        "properties": {
+          "devices": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DeviceInfo"
+            },
+            "description": "Diccionario de dispositivos conectados"
+          },
+          "mqtt_connected": {
+            "type": "boolean",
+            "description": "Estado de conexión MQTT"
+          },
+          "device_count": {
+            "type": "integer",
+            "description": "Número total de dispositivos"
+          }
+        }
+      },
+      "DeviceStatusResponse": {
+        "required": [
+          "data",
+          "device",
+          "mqtt_connected"
+        ],
+        "type": "object",
+        "properties": {
+          "device": {
+            "type": "string",
+            "description": "Nombre del dispositivo"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DeviceInfo"
+          },
+          "mqtt_connected": {
+            "type": "boolean",
+            "description": "Estado de conexión MQTT"
+          }
+        }
+      },
+      "DeviceInfo": {
+        "required": [
+          "LWT",
+          "STATE"
+        ],
+        "type": "object",
+        "properties": {
+          "LWT": {
+            "$ref": "#/components/schemas/LastWillTestament"
+          },
+          "STATE": {
+            "$ref": "#/components/schemas/DeviceState"
+          }
+        }
+      },
+      "LastWillTestament": {
+        "required": [
+          "payload",
+          "timestamp"
+        ],
+        "type": "object",
+        "properties": {
+          "payload": {
+            "type": "string",
+            "description": "Estado de conectividad del dispositivo",
+            "enum": [
+              "Online",
+              "Offline"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "Timestamp del último estado conocido",
+            "format": "date-time"
+          }
+        }
+      },
+      "DeviceState": {
+        "required": [
+          "payload",
+          "timestamp"
+        ],
+        "type": "object",
+        "properties": {
+          "payload": {
+            "$ref": "#/components/schemas/StatePayload"
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "Timestamp del estado",
+            "format": "date-time"
+          }
+        }
+      },
+      "StatePayload": {
+        "required": [
+          "Heap",
+          "LoadAvg",
+          "MqttCount",
+          "POWER",
+          "Sleep",
+          "SleepMode",
+          "Time",
+          "Uptime",
+          "UptimeSec",
+          "Wifi"
+        ],
+        "type": "object",
+        "properties": {
+          "Time": {
+            "type": "string",
+            "description": "Tiempo del dispositivo"
+          },
+          "Uptime": {
+            "type": "string",
+            "description": "Tiempo de actividad del dispositivo"
+          },
+          "UptimeSec": {
+            "type": "integer",
+            "description": "Tiempo de actividad en segundos"
+          },
+          "Heap": {
+            "type": "integer",
+            "description": "Memoria heap disponible"
+          },
+          "SleepMode": {
+            "type": "string",
+            "description": "Modo de suspensión"
+          },
+          "Sleep": {
+            "type": "integer",
+            "description": "Valor de suspensión"
+          },
+          "LoadAvg": {
+            "type": "integer",
+            "description": "Promedio de carga"
+          },
+          "MqttCount": {
+            "type": "integer",
+            "description": "Contador de mensajes MQTT"
+          },
+          "POWER": {
+            "type": "string",
+            "description": "Estado de alimentación",
+            "enum": [
+              "ON",
+              "OFF"
+            ]
+          },
+          "Wifi": {
+            "$ref": "#/components/schemas/WifiInfo"
+          }
+        }
+      },
+      "WifiInfo": {
+        "required": [
+          "AP",
+          "BSSId",
+          "Channel",
+          "Downtime",
+          "LinkCount",
+          "Mode",
+          "RSSI",
+          "SSId",
+          "Signal"
+        ],
+        "type": "object",
+        "properties": {
+          "AP": {
+            "type": "integer",
+            "description": "Número de punto de acceso"
+          },
+          "SSId": {
+            "type": "string",
+            "description": "Nombre de la red WiFi"
+          },
+          "BSSId": {
+            "type": "string",
+            "description": "BSSID del punto de acceso"
+          },
+          "Channel": {
+            "type": "integer",
+            "description": "Canal WiFi"
+          },
+          "Mode": {
+            "type": "string",
+            "description": "Modo de conexión WiFi"
+          },
+          "RSSI": {
+            "type": "integer",
+            "description": "Intensidad de señal recibida"
+          },
+          "Signal": {
+            "type": "integer",
+            "description": "Nivel de señal en dBm"
+          },
+          "LinkCount": {
+            "type": "integer",
+            "description": "Contador de enlaces"
+          },
+          "Downtime": {
+            "type": "string",
+            "description": "Tiempo de inactividad"
+          }
+        }
+      },
+      "PowerControlRequest": {
+        "required": [
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "description": "Estado deseado del dispositivo",
+            "enum": [
+              "ON",
+              "OFF"
+            ]
+          }
+        }
+      },
+      "PowerControlResponse": {
+        "required": [
+          "command",
+          "device",
+          "state",
+          "success",
+          "timestamp"
+        ],
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Indica si el comando fue exitoso"
+          },
+          "device": {
+            "type": "string",
+            "description": "Nombre del dispositivo"
+          },
+          "command": {
+            "type": "string",
+            "description": "Comando ejecutado"
+          },
+          "state": {
+            "type": "string",
+            "description": "Estado enviado",
+            "enum": [
+              "ON",
+              "OFF"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "Timestamp de la operación",
+            "format": "date-time"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "required": [
+          "error",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Tipo de error"
+          },
+          "message": {
+            "type": "string",
+            "description": "Descripción detallada del error"
+          }
+        }
+      }
+    }
+  }
+}
